@@ -18,9 +18,8 @@ class CRUDService extends AbstractService
      *
      * @param \Illuminate\Database\Eloquent\Model $model
      * @param string $id
-     * @param array $relationships
      * @return \Illuminate\Database\Eloquent\Model
-     * @throws \TextMessaging\Exceptions\ModelNotFoundException
+     * @throws \BudgetDumpster\Exceptions\ModelNotFoundException
      */
     public function retrieve(\Illuminate\Database\Eloquent\Model $model, $id)
     {
@@ -106,7 +105,7 @@ class CRUDService extends AbstractService
      * @param string $id
      * @return \Illuminate\Database\Eloquent\Model
      * @throws \RuntimeException
-     * @throws \TextMessaging\Exceptions\ModelNotFoundException
+     * @throws \BudgetDumpster\Exceptions\ModelNotFoundException
      */
     public function update(\Illuminate\Database\Eloquent\Model $model, array $input, $id)
     {
@@ -150,7 +149,7 @@ class CRUDService extends AbstractService
      * @param string $id
      * @return boolean
      * @throws \RuntimeException
-     * @throws \TextMessaging\Exceptions\ModelNotFoundException
+     * @throws \BudgetDumpster\Exceptions\ModelNotFoundException
      */
     public function delete(\Illuminate\Database\Eloquent\Model $model, $id)
     {
@@ -187,6 +186,7 @@ class CRUDService extends AbstractService
      * @param array $where
      * @return Array
      * @throws \RuntimeException
+     * @throws \InvalidArgumentException
      */
     public function retrieveAll(
         \Illuminate\Database\Eloquent\Model $model,
