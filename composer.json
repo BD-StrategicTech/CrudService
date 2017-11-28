@@ -1,0 +1,33 @@
+{
+    "name": "budgetdumpster/crud-service",
+    "type": "library",
+    "license": "MIT",
+    "description": "Eloquent model-independent CRUD Service",
+    "keywords": ["Eloquent", "CRUD", "Laravel"],
+    "homepage": "https://github.com/BD-StrategicTech/CrudService",
+    "authors": [
+        {
+            "name": "Matt Frost",
+            "email": "mattf@budgetdumpster.com",
+            "homepage": "https://www.budgetdumpster.com",
+            "role": "developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CrudService\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CrudService\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "illuminate/database": "^5.5",
+        "illuminate/events": "^5.5"
+    }
+}
