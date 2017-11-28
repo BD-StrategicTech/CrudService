@@ -1,50 +1,22 @@
 <?php
 /**
  * @author Matt Frost<mattf@budgetdumpster.com>
- * @package TextMessaging
+ * @package BudgetDumpster
  * @subpackage Tests
- * @subpackage Unit
- * @subpackage Services
  * @copyright BudgetDumpster LLC, 2017
  */
-namespace TextMessaging\Tests\Unit\Services;
+namespace BudgetDumpster\Tests;
+
 use PHPUnit\Framework\TestCase;
-use TextMessaging\Controllers;
-use TextMessaging\Services\CRUDService;
-use TextMessaging\Models;
-use TextMessaging\Tests\Unit\Helpers;
+use BudgetDumpster\Services\CRUDService;
+use BudgetDumpster\Exceptions;
 
 class CRUDServiceTest extends TestCase
 {
     /**
-     * @var TextMessaging\Services\CRUDService
+     * @var Illuminate\Database\Eloquent\Model
      */
-    private $crudService;
-
-    /**
-     * @var TextMessaging\Tests\Unit\CustomerHelper
-     */
-    private $customerHelper;
-    
-    /**
-     * @var TextMessaging\Tests\Unit\MessageHelper
-     */
-    private $messageHelper;
-
-    /**
-     * @var TextMessaging\Models\Customer
-     */
-    private $customerMock;
-
-    /**
-     * @var TextMessaging\Models\Message
-     */
-    private $messageMock;
-
-    /**
-     * @var TextMessaging\Models\TextMessage
-     */
-    private $textMock;
+    private $modelMock;
 
     /**
      * @var Illuminate\Database\Eloquent\Builder
@@ -66,24 +38,13 @@ class CRUDServiceTest extends TestCase
      */
     protected function setUp()
     {
-        $this->customerHelper = new Helpers\CustomerHelper();
-        $this->messageHelper = new Helpers\MessageHelper();
-
-        $this->customerMock = $this->getMockBuilder('TextMessaging\Models\Customer')
+        $this->modelMock = $this->getMockBuilder('Illuminate\Database\Eloquent\Model')
             ->setMethods(['save', 'delete', 'find', 'newQuery', 'load'])
             ->getMock();
 
         $this->logger = $this->getMockBuilder('Monolog\Logger')
             ->setMethods(['info', 'warning', 'error', 'debug', 'alert', 'emergency'])
             ->disableOriginalConstructor()
-            ->getMock();
-
-        $this->messageMock = $this->getMockBuilder('TextMessaging\Models\Message')
-            ->setMethods(['save', 'delete', 'find', 'newQuery'])
-            ->getMock();
-
-        $this->textMock = $this->getMockBuilder('TextMessaging\Models\TextMessage')
-            ->setMethods(['save', 'delete', 'find', 'newQuery'])
             ->getMock();
 
         $this->builderMock = $this->getMockBuilder('Illuminate\Database\Eloquent\Builder')
@@ -102,11 +63,7 @@ class CRUDServiceTest extends TestCase
      */
     protected function tearDown()
     {
-        unset($this->customerHelper);
-        unset($this->messageHelper);
-        unset($this->customerMock);
-        unset($this->messageMock);
-        unset($this->textMock);
+        unset($this->modelMock);
         unset($this->builderMock);
         unset($this->collectionMock);
         unset($this->logger);
@@ -116,14 +73,14 @@ class CRUDServiceTest extends TestCase
      * Test to ensure if a model is not found in the retrieve method
      * that a ModelNotFoundException is thrown
      *
-     * @expectedException \TextMessaging\Exceptions\ModelNotFoundException
+     * @expectedException \BudgetDumpster\Exceptions\ModelNotFoundException
      * @group services
      * @group crud
      */
     public function testRetrieveModelNotFoundThrowsException()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
             ->will($this->returnValue(null));
@@ -134,21 +91,21 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->retrieve($this->customerMock, $id);
+        $crudService->retrieve($this->modelMock, $id);
     }
 
     /**
      * Test to ensure if model throws query exception in retrieve, exception
      * will be caught and rethrown
      *
-     * @expectedException \TextMessaging\Exceptions\ModelNotFoundException
+     * @expectedException \BudgetDumpster\Exceptions\ModelNotFoundException
      * @group services
      * @group crud
      */
     public function testRetrieveModelQueryExceptionRethrowsException()
     {
-        $id = $this->messageHelper->getHash();
-        $this->messageMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
@@ -159,7 +116,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->retrieve($this->messageMock, $id);
+        $crudService->retrieve($this->modelMock, $id);
     }
 
     /**
@@ -170,19 +127,15 @@ class CRUDServiceTest extends TestCase
      */
     public function testSuccessfulRetrieveCallReturnsModel()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $this->customerMock->id = $id;
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
         $crudService = new CRUDService($this->logger);
-        $response = $crudService->retrieve($this->customerMock, $id);
-
-        $this->assertEquals($this->customerMock->id, $response->id);
-        $this->assertEquals($this->customerMock->first_name, $response->first_name);
+        $response = $crudService->retrieve($this->modelMock, $id);
+        $this->assertInstanceOf('\Illuminate\Database\Eloquent\Model', $response);
     }
 
     /**
@@ -193,31 +146,28 @@ class CRUDServiceTest extends TestCase
      */
     public function testSuccessfulRetrievalWithRelationshipsReturnsModel()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $this->customerMock->id = $id;
+        $id = 'ab43ca3434f324acde';
         $foo = new \Stdclass;
-        $foo->id = $this->customerHelper->getHash();
+        $foo->id = 'bbace5234324feace';
         $foo->name = 'Foo 2';
         $foo_array = [$foo];
-        $this->customerMock->foo = $foo_array;
-        $this->customerMock->foo_id = $foo->id;
+        $this->modelMock->relationNames = ['test'];
+        $this->modelMock->foo = $foo_array;
+        $this->modelMock->foo_id = $foo->id;
 
-        $this->customerMock->expects($this->any())
+        $this->modelMock->expects($this->any())
             ->method('load')
             ->with($this->isType('string'))
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
-
-        $relationship = ['foo'];
+            ->will($this->returnValue($this->modelMock));
 
         $crudService = new CRUDService($this->logger);
-        $response = $crudService->retrieve($this->customerMock, $id, $relationship);
-        $this->assertEquals($this->customerMock->id, $response->id);
+        $response = $crudService->retrieve($this->modelMock, $id);
+        $this->assertEquals($this->modelMock->id, $response->id);
     }
 
     /**
@@ -227,13 +177,15 @@ class CRUDServiceTest extends TestCase
      */
     public function testCreateMethodThrowsExceptionIfSaveFails()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->expects($this->once())
             ->method('save')
             ->will($this->returnValue(false));
 
-        $input = $this->customerHelper->modelAsArray($this->customerMock);
+        $input = [
+            'name' => 'test',
+            'description' => 'A test description'
+        ];
 
         $this->logger->expects($this->once())
             ->method('error')
@@ -241,7 +193,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->create($this->customerMock, $input, $id);
+        $crudService->create($this->modelMock, $input, $id);
     }
 
     /**
@@ -251,11 +203,14 @@ class CRUDServiceTest extends TestCase
      */
     public function testModelThrowingQueryExceptionRethrowsRuntimeException()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $input = $this->customerHelper->modelAsArray($this->customerMock);
+        $id = 'ab43ca3434f324acde';
 
-        $this->customerMock->expects($this->once())
+        $input = [
+            'name' => 'Test',
+            'description' => 'Test description'
+        ];
+
+        $this->modelMock->expects($this->once())
             ->method('save')
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
 
@@ -266,7 +221,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->create($this->customerMock, $input, $id);
+        $crudService->create($this->modelMock, $input, $id);
     }
 
     /**
@@ -275,32 +230,39 @@ class CRUDServiceTest extends TestCase
      */
     public function testCreateMethodReturnsModelOnSuccess()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $input = $this->customerHelper->modelAsArray($this->customerMock);
-        $this->customerMock->id = $id;
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+
+        $input = [
+            'name' => 'Test',
+            'description' => 'Test description'
+        ];
+
+        $this->modelMock->id = $id;
+        $this->modelMock->expects($this->once())
             ->method('save')
             ->will($this->returnValue(true));
 
         $crudService = new CRUDService($this->logger);
-        $response = $crudService->create($this->customerMock, $input, $id);
-        $this->assertEquals($response->id, $this->customerMock->id);
-        $this->assertEquals($response->first_name, $this->customerMock->first_name);
+        $response = $crudService->create($this->modelMock, $input, $id);
+        $this->assertInstanceOf('\Illuminate\Database\Eloquent\Model', $response);
     }
 
     /**
      * Test on Update to ensure a model not found exception is thrown if
      * the model cannot be found
      *
-     * @expectedException \TextMessaging\Exceptions\ModelNotFoundException
+     * @expectedException \BudgetDumpster\Exceptions\ModelNotFoundException
      */
     public function testUpdateMethodThrowsModelNotFoundException()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $input = $this->customerHelper->modelAsArray($this->customerMock);
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+
+        $input = [
+            'name' => 'Test',
+            'description' => 'Test Description'
+        ];
+
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
             ->will($this->returnValue(null));
@@ -311,7 +273,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->update($this->customerMock, $input, $id);
+        $crudService->update($this->modelMock, $input, $id);
     }
 
     /**
@@ -322,18 +284,21 @@ class CRUDServiceTest extends TestCase
      */
     public function testUpdateMethodThrowsRuntimeExceptionOnSaveFailure()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $input = $this->customerHelper->modelAsArray($this->customerMock);
+        $id = 'ab43ca3434f324acde';
 
-        $this->customerMock->expects($this->once())
+        $input = [
+            'name' => 'Test',
+            'description' => 'Test Description'
+        ];
+
+        $this->modelMock->expects($this->once())
             ->method('save')
             ->will($this->returnValue(false));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
         $this->logger->expects($this->once())
             ->method('error')
@@ -341,7 +306,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->update($this->customerMock, $input, $id);
+        $crudService->update($this->modelMock, $input, $id);
     }
 
     /**
@@ -352,18 +317,21 @@ class CRUDServiceTest extends TestCase
      */
     public function testUpdateMethodRethrowsExceptionOnSaveFailure()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $input = $this->customerHelper->modelAsArray($this->customerMock);
-        $this->customerMock->id = $id;
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+        $input = [
+            'name' => 'Test',
+            'description' => 'Test Description'
+        ];
+
+        $this->modelMock->id = $id;
+        $this->modelMock->expects($this->once())
             ->method('save')
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
         $this->logger->expects($this->once())
             ->method('error')
@@ -371,7 +339,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->update($this->customerMock, $input, $id);
+        $crudService->update($this->modelMock, $input, $id);
     }
 
     /**
@@ -379,36 +347,38 @@ class CRUDServiceTest extends TestCase
      */
     public function testUpdateMethodReturnsModelOnSuccess()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $this->customerMock->id = $id;
-        $input = $this->customerHelper->modelAsArray($this->customerMock);
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->id = $id;
 
-        $this->customerMock->expects($this->once())
+        $input = [
+            'name' => 'Test',
+            'description' => 'Test Description'
+        ];
+
+        $this->modelMock->expects($this->once())
             ->method('save')
             ->will($this->returnValue(true));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
         $crudService = new CRUDService($this->logger);
-        $response = $crudService->update($this->customerMock, $input, $id);
-        $this->assertEquals($response->id, $this->customerMock->id);
-        $this->assertEquals($response->first_name, $this->customerMock->first_name);
+        $response = $crudService->update($this->modelMock, $input, $id);
+        $this->assertInstanceOf('\Illuminate\Database\Eloquent\Model', $response);
     }
 
     /**
      * Test to ensure delete method returns ModelNotFoundException if model
      * cannot be retrieved
      *
-     * @expectedException \TextMessaging\Exceptions\ModelNotFoundException
+     * @expectedException \BudgetDumpster\Exceptions\ModelNotFoundException
      */
     public function testDeleteReturnsExceptionIfModelCannotBeFound()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
             ->will($this->returnValue(null));
@@ -419,7 +389,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->delete($this->customerMock, $id);
+        $crudService->delete($this->modelMock, $id);
     }
 
     /**
@@ -429,18 +399,17 @@ class CRUDServiceTest extends TestCase
      */
     public function testDeleteFailureThrowsRuntimeException()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $this->customerMock->id = $id;
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->id = $id;
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('delete')
             ->will($this->returnValue(false));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
         $this->logger->expects($this->once())
             ->method('error')
@@ -448,7 +417,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->delete($this->customerMock, $id);
+        $crudService->delete($this->modelMock, $id);
     }
 
     /**
@@ -459,16 +428,15 @@ class CRUDServiceTest extends TestCase
      */
     public function testDeleteFailureCatchsQueryExceptionThrowsAsRuntime()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
-        $this->customerMock->expects($this->once())
+        $id = 'ab43ca3434f324acde';
+        $this->modelMock->expects($this->once())
             ->method('delete')
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
         $this->logger->expects($this->once())
             ->method('error')
@@ -476,7 +444,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->delete($this->customerMock, $id);
+        $crudService->delete($this->modelMock, $id);
     }
 
     /**
@@ -484,20 +452,19 @@ class CRUDServiceTest extends TestCase
      */
     public function testDeleteReturnsTrueOnSuccess()
     {
-        $id = $this->customerHelper->getHash();
-        $this->customerMock = $this->customerHelper->getModel($this->customerMock);
+        $id = 'ab43ca3434f324acde';
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('delete')
             ->will($this->returnValue(true));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('find')
             ->with($id)
-            ->will($this->returnValue($this->customerMock));
+            ->will($this->returnValue($this->modelMock));
 
         $crudService = new CRUDService($this->logger);
-        $response = $crudService->delete($this->customerMock, $id);
+        $response = $crudService->delete($this->modelMock, $id);
 
         $this->assertTrue($response);
     }
@@ -519,7 +486,7 @@ class CRUDServiceTest extends TestCase
             ->method('get')
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('newQuery')
             ->will($this->returnValue($this->builderMock));
 
@@ -529,7 +496,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->retrieveAll($this->customerMock);
+        $crudService->retrieveAll($this->modelMock);
     }
 
     /**
@@ -565,12 +532,12 @@ class CRUDServiceTest extends TestCase
             ->method('get')
             ->will($this->returnValue($this->collectionMock));
 
-        $this->customerMock->expects($this->once())
+        $this->modelMock->expects($this->once())
             ->method('newQuery')
             ->will($this->returnValue($this->builderMock));
 
         $crudService = new CRUDService($this->logger);
-        $response = $crudService->retrieveAll($this->customerMock, $page, $per_page);
+        $response = $crudService->retrieveAll($this->modelMock, $page, $per_page);
 
         $this->assertEquals($page, $response['page']);
         $this->assertEquals($per_page, $response['per_page']);
@@ -593,7 +560,7 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue(null));
 
         $crudService = new CRUDService($this->logger);
-        $crudService->retrieveAll($this->customerMock, $page, $per_page);
+        $crudService->retrieveAll($this->modelMock, $page, $per_page);
     }
 
     /**

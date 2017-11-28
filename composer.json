@@ -18,16 +18,20 @@
     },
     "autoload": {
         "psr-4": {
-            "CrudService\\": "src/"
+            "BudgetDumpster\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "CrudService\\Tests\\": "tests/"
+            "BudgetDumpster\\Tests\\": "tests/"
         }
     },
     "require": {
         "illuminate/database": "^5.5",
-        "illuminate/events": "^5.5"
+        "illuminate/events": "^5.5",
+        "monolog/monolog": "^1.23"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.4"
     }
 }

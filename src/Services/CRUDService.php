@@ -1,13 +1,13 @@
 <?php
 /**
  * @author Matt Frost<mattf@budgetdumpster.com>
- * @package TextMessaging
+ * @package BudgetDumpster
  * @subpackage Services
  * @copyright Budget Dumpster, LLC 2017
  */
-namespace TextMessaging\Services;
+namespace BudgetDumpster\Services; 
 
-use TextMessaging\Exceptions\ModelNotFoundException;
+use BudgetDumpster\Exceptions\ModelNotFoundException;
 use \RuntimeException;
 use \Exception;
 
@@ -22,7 +22,7 @@ class CRUDService extends AbstractService
      * @return \Illuminate\Database\Eloquent\Model
      * @throws \TextMessaging\Exceptions\ModelNotFoundException
      */
-    public function retrieve(\Illuminate\Database\Eloquent\Model $model, $id, array $relationships = [])
+    public function retrieve(\Illuminate\Database\Eloquent\Model $model, $id)
     {
         try {
             $model = $model->find($id);
