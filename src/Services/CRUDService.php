@@ -7,28 +7,28 @@
  */
 namespace BudgetDumpster\Services; 
 
-use BudgetDumpster\Exceptions\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Model;
 use \RuntimeException;
 use \Exception;
+use Illuminate\Database\QueryException;
+use BudgetDumpster\Exceptions\ModelNotFoundException;
 
 class CRUDService extends AbstractService
 {
     /**
      * Retrieve a model by id from eloquent
      *
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @param string $id
-     * @return \Illuminate\Database\Eloquent\Model
-     * @throws \BudgetDumpster\Exceptions\ModelNotFoundException
+     * @param array $fields
+     * @return Model
+     * @throws ModelNotFoundException
      */
-    public function retrieve(\Illuminate\Database\Eloquent\Model $model, $id)
+    public function retrieve(Model $model, $id, array $fields = [])
     {
         try {
-            $model = $model->find($id);
-            $relationships = (isset($model->relationNames)) ? $model->relationNames : [];
-            foreach ($relationships as $relationship) {
-                $model->load($relationship);
-            }
+            $fields = (!empty($fields)) ? $fields : ['*'];
+            $model = $model->find($id, $fields);
 
             if (is_null($model)) {
             $this->logger->info(
@@ -42,7 +42,7 @@ class CRUDService extends AbstractService
             }
 
             return $model;
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             $this->logger->error(
                 sprintf(
                     getenv('LOG_NOT_FOUND_MESSAGE'),
@@ -57,13 +57,13 @@ class CRUDService extends AbstractService
     /**
      * Attempt to create a model from input data
      *
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @param Array $input_data
      * @param string $id
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return Model
      * @throws \RuntimeException
      */
-    public function create(\Illuminate\Database\Eloquent\Model $model, array $input, $id)
+    public function create(Model $model, array $input, $id)
     {
         try {
             $model->id = $id;
@@ -85,7 +85,7 @@ class CRUDService extends AbstractService
             }
 
             return $model;
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
                 $this->logger->error(
                     sprintf(
                         getenv('LOG_CREATE_FAILED_MESSAGE'),
@@ -100,14 +100,14 @@ class CRUDService extends AbstractService
     /**
      * Attempt to update an existing model
      *
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @param Array $input
      * @param string $id
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return Model
      * @throws \RuntimeException
-     * @throws \BudgetDumpster\Exceptions\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
-    public function update(\Illuminate\Database\Eloquent\Model $model, array $input, $id)
+    public function update(Model $model, array $input, $id)
     {
         try {
             $model = $this->retrieve($model, $id);
@@ -130,7 +130,7 @@ class CRUDService extends AbstractService
             }
 
             return $model;
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
                 $this->logger->error(
                     sprintf(
                         getenv('LOG_UPDATE_FAILED_MESSAGE'),
@@ -145,13 +145,13 @@ class CRUDService extends AbstractService
     /**
      * Attempt to delete an existing model
      *
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @param string $id
      * @return boolean
      * @throws \RuntimeException
-     * @throws \BudgetDumpster\Exceptions\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
-    public function delete(\Illuminate\Database\Eloquent\Model $model, $id)
+    public function delete(Model $model, $id)
     {
         try {
             $model = $this->retrieve($model, $id);
@@ -165,7 +165,7 @@ class CRUDService extends AbstractService
                 throw new RuntimeException('There was an error deleting the model', 500);
             }
             return true;
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
                 $this->logger->error(
                     sprintf(
                         getenv('LOG_DELETE_FAILED_MESSAGE'),
@@ -180,7 +180,7 @@ class CRUDService extends AbstractService
      * Retrieve a paginated collection of models based on the per_page and page
      * arguments provided
      *
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @param int $page
      * @param int $per_page
      * @param array $where
@@ -189,7 +189,7 @@ class CRUDService extends AbstractService
      * @throws \InvalidArgumentException
      */
     public function retrieveAll(
-        \Illuminate\Database\Eloquent\Model $model,
+        Model $model,
         $page = 1,
         $per_page = 20,
         array $where = ['field' => 'id', 'operator' => '!=', 'value' => null]
@@ -218,7 +218,7 @@ class CRUDService extends AbstractService
                 'total_pages' => $total_pages,
                 'models' => $models
             ];
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
                 $this->logger->error(
                     sprintf(
                         getenv('LOG_RETRIEVAL_ERROR_MESSAGE')
@@ -227,5 +227,19 @@ class CRUDService extends AbstractService
 
             throw new RuntimeException($e->getMessage(), 500, $e);
         }
+    }
+
+    /**
+     * Add a relationship to an existing model
+     *
+     * @param Model $model
+     * @param Model $relatedModel
+     * @param string $relationshipName
+     * @return Model
+     */
+    public function addRelationship(Model $model, Model $relatedModel, $relationshipName)
+    {
+        $savedModel = $model->$relationshipName()->save($relatedModel);   
+        return $savedModel;
     }
 }
