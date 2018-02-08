@@ -250,9 +250,4 @@ class CRUDService extends AbstractService
         $savedModel = $model->$relationshipName()->save($relatedModel);   
         return $savedModel;
     }
-
-    /**
-     * Method to retrieve an eager loaded model instance
-     *
-     * @param
 }
