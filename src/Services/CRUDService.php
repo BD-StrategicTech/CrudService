@@ -192,7 +192,8 @@ class CRUDService extends AbstractService
         Model $model,
         $page = 1,
         $per_page = 20,
-        array $where = ['field' => 'id', 'operator' => '!=', 'value' => null]
+        array $where = ['field' => 'id', 'operator' => '!=', 'value' => null],
+        array $fields = ['*']
     ) {
     
         if (!is_int($page) || !is_int($per_page)) {
@@ -210,7 +211,7 @@ class CRUDService extends AbstractService
             $count = $base_search->get()->count();
             $total_pages = ceil($count/$per_page);
             $offset = ($page - 1) * $per_page;
-            $models = $base_search->take($per_page)->skip($offset)->get();
+            $models = $base_search->take($per_page)->skip($offset)->get($fields);
             return [
                 'page' => $page,
                 'per_page' => $per_page,
