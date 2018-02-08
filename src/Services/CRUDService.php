@@ -10,6 +10,7 @@ namespace BudgetDumpster\Services;
 use Illuminate\Database\Eloquent\Model;
 use \RuntimeException;
 use \Exception;
+use \InvalidArgumentException;
 use Illuminate\Database\QueryException;
 use BudgetDumpster\Exceptions\ModelNotFoundException;
 
@@ -18,15 +19,21 @@ class CRUDService extends AbstractService
     /**
      * Retrieve a model by id from eloquent
      *
-     * @param Model $model
+     * @param mixed $model
      * @param string $id
      * @param array $fields
      * @return Model
      * @throws ModelNotFoundException
      */
-    public function retrieve(Model $model, $id, array $fields = [])
+    public function retrieve($model, $id, array $fields = [])
     {
         try {
+            if (
+                !$model instanceof \Illuminate\Database\Eloquent\Model &&
+                !$model instanceof \Illuminate\Database\Eloquent\Builder
+            ) {
+                throw new InvalidArgumentException("A model instance or Builder instance is required for the retrieve method", 400);
+            } 
             $fields = (!empty($fields)) ? $fields : ['*'];
             $model = $model->find($id, $fields);
 
@@ -243,4 +250,9 @@ class CRUDService extends AbstractService
         $savedModel = $model->$relationshipName()->save($relatedModel);   
         return $savedModel;
     }
+
+    /**
+     * Method to retrieve an eager loaded model instance
+     *
+     * @param
 }
