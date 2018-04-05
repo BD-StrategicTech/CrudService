@@ -187,7 +187,7 @@ class CRUDService extends AbstractService
      * Retrieve a paginated collection of models based on the per_page and page
      * arguments provided
      *
-     * @param Model $model
+     * @param Model|Builder mixed $model
      * @param int $page
      * @param int $per_page
      * @param array $where
@@ -196,7 +196,7 @@ class CRUDService extends AbstractService
      * @throws \InvalidArgumentException
      */
     public function retrieveAll(
-        Model $model,
+        $model,
         $page = 1,
         $per_page = 20,
         array $where = ['field' => 'id', 'operator' => '!=', 'value' => null],
