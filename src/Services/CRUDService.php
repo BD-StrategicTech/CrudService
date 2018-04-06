@@ -219,7 +219,7 @@ class CRUDService extends AbstractService
             $total_pages = ceil($count/$per_page);
             $offset = ($page - 1) * $per_page;
             $models = $base_search;
-            if ($this->per_page != -1) {
+            if ($per_page != -1) {
                 $models = $models->take($per_page)->skip($offset);
             }
             $models = $models->get($field);
