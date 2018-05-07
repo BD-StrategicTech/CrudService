@@ -4,6 +4,7 @@
  * @package BudgetDumpster
  * @subpackage Services
  * @copyright Budget Dumpster, LLC 2017
+ * @version 1.0.0
  */
 namespace BudgetDumpster\Services; 
 
