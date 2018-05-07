@@ -222,7 +222,7 @@ class CRUDService extends AbstractService
             if ($per_page != -1) {
                 $models = $models->take($per_page)->skip($offset);
             }
-            $models = $models->get($field);
+            $models = $models->get($fields);
             return [
                 'page' => $page,
                 'per_page' => $per_page,
