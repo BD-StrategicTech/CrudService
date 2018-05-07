@@ -29,22 +29,12 @@ class CRUDServiceTest extends TestCase
     private $collectionMock;
 
     /**
-     * @var Monolog\Logger
-     */
-    private $logger;
-
-    /**
      * Test Setup method
      */
     protected function setUp()
     {
         $this->modelMock = $this->getMockBuilder('Illuminate\Database\Eloquent\Model')
             ->setMethods(['save', 'delete', 'find', 'newQuery', 'load'])
-            ->getMock();
-
-        $this->logger = $this->getMockBuilder('Monolog\Logger')
-            ->setMethods(['info', 'warning', 'error', 'debug', 'alert', 'emergency'])
-            ->disableOriginalConstructor()
             ->getMock();
 
         $this->builderMock = $this->getMockBuilder('Illuminate\Database\Eloquent\Builder')
@@ -66,7 +56,6 @@ class CRUDServiceTest extends TestCase
         unset($this->modelMock);
         unset($this->builderMock);
         unset($this->collectionMock);
-        unset($this->logger);
     }
 
     /**
@@ -85,13 +74,21 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue(null));
 
-        $this->logger->expects($this->once())
-            ->method('info')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->retrieve($this->modelMock, $id);
+    }
+
+    /**
+     * Test to ensure if a model or builder is not passed to the retrieve
+     * method, an InvalidArgumentException will be thrown
+     *
+     * @expectedException \InvalidArgumentException
+     */
+    public function testNonModelArgumentThrowsException()
+    {
+        $notModel = new \stdClass;
+        $crudService = new CRUDService();
+        $crudService->retrieve($notModel, '123456');
     }
 
     /**
@@ -110,12 +107,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
 
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->retrieve($this->modelMock, $id);
     }
 
@@ -133,7 +125,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $response = $crudService->retrieve($this->modelMock, $id);
         $this->assertInstanceOf('\Illuminate\Database\Eloquent\Model', $response);
     }
@@ -165,7 +157,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $response = $crudService->retrieve($this->modelMock, $id);
         $this->assertEquals($this->modelMock->id, $response->id);
     }
@@ -187,12 +179,7 @@ class CRUDServiceTest extends TestCase
             'description' => 'A test description'
         ];
 
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->create($this->modelMock, $input, $id);
     }
 
@@ -214,13 +201,7 @@ class CRUDServiceTest extends TestCase
             ->method('save')
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
 
-
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->create($this->modelMock, $input, $id);
     }
 
@@ -242,7 +223,7 @@ class CRUDServiceTest extends TestCase
             ->method('save')
             ->will($this->returnValue(true));
 
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $response = $crudService->create($this->modelMock, $input, $id);
         $this->assertInstanceOf('\Illuminate\Database\Eloquent\Model', $response);
     }
@@ -267,12 +248,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue(null));
 
-        $this->logger->expects($this->once())
-            ->method('info')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->update($this->modelMock, $input, $id);
     }
 
@@ -300,12 +276,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->update($this->modelMock, $input, $id);
     }
 
@@ -333,12 +304,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->update($this->modelMock, $input, $id);
     }
 
@@ -364,7 +330,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $response = $crudService->update($this->modelMock, $input, $id);
         $this->assertInstanceOf('\Illuminate\Database\Eloquent\Model', $response);
     }
@@ -383,12 +349,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue(null));
 
-        $this->logger->expects($this->once())
-            ->method('info')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->delete($this->modelMock, $id);
     }
 
@@ -411,12 +372,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->delete($this->modelMock, $id);
     }
 
@@ -438,12 +394,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->delete($this->modelMock, $id);
     }
 
@@ -463,7 +414,7 @@ class CRUDServiceTest extends TestCase
             ->with($id)
             ->will($this->returnValue($this->modelMock));
 
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $response = $crudService->delete($this->modelMock, $id);
 
         $this->assertTrue($response);
@@ -490,12 +441,7 @@ class CRUDServiceTest extends TestCase
             ->method('newQuery')
             ->will($this->returnValue($this->builderMock));
 
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->retrieveAll($this->modelMock);
     }
 
@@ -536,7 +482,7 @@ class CRUDServiceTest extends TestCase
             ->method('newQuery')
             ->will($this->returnValue($this->builderMock));
 
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $response = $crudService->retrieveAll($this->modelMock, $page, $per_page);
 
         $this->assertEquals($page, $response['page']);
@@ -554,12 +500,7 @@ class CRUDServiceTest extends TestCase
      */
     public function testRetrieveAllBadPageOrPageTypeArgumentValuesThrowAnException($page, $per_page)
     {
-        $this->logger->expects($this->once())
-            ->method('error')
-            ->with($this->isType('string'), $this->isType('array'))
-            ->will($this->returnValue(null));
-
-        $crudService = new CRUDService($this->logger);
+        $crudService = new CRUDService();
         $crudService->retrieveAll($this->modelMock, $page, $per_page);
     }
 

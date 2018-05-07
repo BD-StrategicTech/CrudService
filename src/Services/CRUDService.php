@@ -14,7 +14,7 @@ use \InvalidArgumentException;
 use Illuminate\Database\QueryException;
 use BudgetDumpster\Exceptions\ModelNotFoundException;
 
-class CRUDService extends AbstractService
+class CRUDService
 {
     /**
      * Retrieve a model by id from eloquent
@@ -38,25 +38,11 @@ class CRUDService extends AbstractService
             $model = $model->find($id, $fields);
 
             if (is_null($model)) {
-            $this->logger->info(
-                sprintf(
-                    getenv('LOG_NOT_FOUND_MESSAGE'),
-                    get_class($model),
-                    $id
-                ), ['id' => $id]); 
-                    
                 throw new ModelNotFoundException('We were unable to locate this model', 404);
             }
 
             return $model;
         } catch (QueryException $e) {
-            $this->logger->error(
-                sprintf(
-                    getenv('LOG_NOT_FOUND_MESSAGE'),
-                    get_class($model),
-                    $id
-                ), $this->getLoggingContext($e, [], true));
-                    
             throw new ModelNotFoundException($e->getMessage(), 404, $e);
         }
     }
@@ -81,25 +67,12 @@ class CRUDService extends AbstractService
 
             if (!$model->save()) {
                 $input['id'] = $id;
-                $this->logger->error(
-                    sprintf(
-                        getenv('LOG_CREATE_FAILED_MESSAGE'),
-                        get_class($model),
-                        get_class($this) . '::create'
-                    ), $input); 
 
                 throw new RuntimeException('There was an error saving the model', 500);
             }
 
             return $model;
         } catch (QueryException $e) {
-                $this->logger->error(
-                    sprintf(
-                        getenv('LOG_CREATE_FAILED_MESSAGE'),
-                        get_class($model),
-                        get_class($this) . '::create'
-                    ), $this->getLoggingContext($e, [$input], true)); 
-
             throw new RuntimeException($e->getMessage(), 500, $e);
         }
     }
@@ -125,26 +98,12 @@ class CRUDService extends AbstractService
 
             if (!$model->save()) {
                 $input['id'] = $id;
-                $this->logger->error(
-                    sprintf(
-                        getenv('LOG_UPDATE_FAILED_MESSAGE'),
-                        get_class($model),
-                        $id,
-                        get_class($this) . '::update'
-                    ), $input); 
 
                 throw new RuntimeException('There was an error saving the model', 500);
             }
 
             return $model;
         } catch (QueryException $e) {
-                $this->logger->error(
-                    sprintf(
-                        getenv('LOG_UPDATE_FAILED_MESSAGE'),
-                        get_class($model),
-                        $id,
-                        get_class($this) . '::update'
-                    ), $this->getLoggingContext($e, [$input], true)); 
             throw new RuntimeException($e->getMessage(), 500, $e);
         }
     }
@@ -163,22 +122,10 @@ class CRUDService extends AbstractService
         try {
             $model = $this->retrieve($model, $id);
             if (!$model->delete()) {
-                $this->logger->error(
-                    sprintf(
-                        getenv('LOG_DELETE_FAILED_MESSAGE'),
-                        get_class($model),
-                        $id
-                    ), []); 
                 throw new RuntimeException('There was an error deleting the model', 500);
             }
             return true;
         } catch (QueryException $e) {
-                $this->logger->error(
-                    sprintf(
-                        getenv('LOG_DELETE_FAILED_MESSAGE'),
-                        get_class($model),
-                        $id
-                    ), $this->getLoggingContext($e, [], true)); 
             throw new RuntimeException($e->getMessage(), 500, $e);
         }
     }
@@ -204,12 +151,6 @@ class CRUDService extends AbstractService
     ) {
     
         if (!is_int($page) || !is_int($per_page)) {
-            $this->logger->error(
-                 sprintf(
-                     getenv('LOG_RETRIEVAL_ERROR_MESSAGE')
-                 ), ['page' => $page, 'per_page' => $per_page]
-            ); 
-
             throw new \InvalidArgumentException('The value of the page and per_page values must be integers', 400);
         }
 
@@ -231,27 +172,7 @@ class CRUDService extends AbstractService
                 'models' => $models
             ];
         } catch (QueryException $e) {
-                $this->logger->error(
-                    sprintf(
-                        getenv('LOG_RETRIEVAL_ERROR_MESSAGE')
-                    ), $this->getLoggingContext($e, [], true)
-                ); 
-
             throw new RuntimeException($e->getMessage(), 500, $e);
         }
-    }
-
-    /**
-     * Add a relationship to an existing model
-     *
-     * @param Model $model
-     * @param Model $relatedModel
-     * @param string $relationshipName
-     * @return Model
-     */
-    public function addRelationship(Model $model, Model $relatedModel, $relationshipName)
-    {
-        $savedModel = $model->$relationshipName()->save($relatedModel);   
-        return $savedModel;
     }
 }
