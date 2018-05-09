@@ -157,7 +157,7 @@ class CRUDService
 
         try {
             $base_search = $model->where($where['field'], $where['operator'], $where['value']);
-            $count = $base_search->get()->count();
+            $count = $model->count();
             $total_pages = ceil($count/$per_page);
             $offset = ($page - 1) * $per_page;
             $models = $base_search;

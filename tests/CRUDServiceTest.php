@@ -434,10 +434,24 @@ class CRUDServiceTest extends TestCase
             ->will($this->returnValue($this->builderMock));
 
         $this->builderMock->expects($this->any())
+            ->method('count')
+            ->will($this->returnValue(100));
+
+        $this->builderMock->expects($this->once())
+            ->method('take')
+            ->with($this->isType('integer'))
+            ->will($this->returnValue($this->builderMock));
+
+        $this->builderMock->expects($this->once())
+            ->method('skip')
+            ->with($this->isType('integer'))
+            ->will($this->returnValue($this->builderMock));
+
+        $this->builderMock->expects($this->any())
             ->method('get')
             ->will($this->throwException(new \Illuminate\Database\QueryException('test', [], new \Exception)));
 
-        $this->modelMock->expects($this->once())
+        $this->modelMock->expects($this->atLeast(1))
             ->method('newQuery')
             ->will($this->returnValue($this->builderMock));
 
@@ -455,7 +469,7 @@ class CRUDServiceTest extends TestCase
         $expected_total_pages = ceil($total/$per_page);
         $offset = ($page - 1) * $per_page;
 
-        $this->collectionMock->expects($this->once())
+        $this->builderMock->expects($this->once())
             ->method('count')
             ->will($this->returnValue($total));
 
@@ -478,7 +492,7 @@ class CRUDServiceTest extends TestCase
             ->method('get')
             ->will($this->returnValue($this->collectionMock));
 
-        $this->modelMock->expects($this->once())
+        $this->modelMock->expects($this->atLeast(1))
             ->method('newQuery')
             ->will($this->returnValue($this->builderMock));
 
