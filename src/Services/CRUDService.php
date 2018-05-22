@@ -91,8 +91,6 @@ class CRUDService
     public function update(Model $model, array $input, $id)
     {
         try {
-            $model = $this->retrieve($model, $id);
-
             foreach ($input as $key => $value) {
                 $model->$key = $value;
             }
@@ -121,7 +119,6 @@ class CRUDService
     public function delete(Model $model, $id)
     {
         try {
-            $model = $this->retrieve($model, $id);
             if (!$model->delete()) {
                 throw new RuntimeException('There was an error deleting the model', 500);
             }
